@@ -406,6 +406,9 @@ export default {
     },
     'config.value': function (newConfig) {
       this.updateData()
+    },
+    'config.filters': function (newConfig) {
+      this.updateData()
     }
   }
 }
