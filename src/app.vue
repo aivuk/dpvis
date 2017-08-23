@@ -1,17 +1,16 @@
 <template>
   <div id="app">
-    <img src="./assets/logo.png">
-    <hello></hello>
+    <treemap></treemap>
   </div>
 </template>
 
 <script>
-import Hello from './components/hello'
+import TreemapComponent from './components/TreemapComponent'
 
 export default {
   name: 'app',
   components: {
-    Hello
+    TreemapComponent
   }
 }
 </script>

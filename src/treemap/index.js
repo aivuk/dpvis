@@ -77,7 +77,7 @@ export default class Treemap {
               div.transition()
                 .duration(200)
                 .style('opacity', 0.9)
-              div.html(`<strong>${d.name}</strong><br>${d.value_fmt}<br><strong>${(d.percentage * 100).toFixed(2)}%</strong>`)
+              div.html(`<strong>${d.name}</strong><p>${d.value_fmt}</p><p><strong>${(d.percentage * 100).toFixed(2)}%</strong></p>`)
                 .style('left', (d3.event.pageX) + 'px')
                 .style('top', (d3.event.pageY - 28) + 'px')
             })

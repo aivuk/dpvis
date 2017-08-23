@@ -16,8 +16,8 @@
         <div class="filter" v-bind:key="filterName" v-for="(filter, filterName) in config['filters']">
           {{ filter.label }}
           <b-select class="btn btn-default dropdown-toggle" :onchange="addFilter()" v-model="filters[filterName]">
-            <option :selected='true' value='' v-if="!filter.default">{{filter.defaultLabel}}</option>
-            <option :value="filterValue.value" v-bind:key="filterValue.label" v-for="filterValue in filter.values">{{filterValue.label}}</option>
+            <option value=''>{{filter.defaultLabel}}</option>
+            <option :selected='filterValue.value === filter.defaultValue' :value="filterValue.value" :key="filterValue.label" v-for="filterValue in filter.values">{{filterValue.label}}</option>
           </b-select>
         </div>
       </div>
@@ -75,67 +75,6 @@ export default {
         '#60C4B1', '#27C4F4', '#478DCB', '#3E67B1', '#4251A3',
         '#59449B', '#6E3F7C', '#6A246D', '#8A4873', '#EB0080',
         '#EF58A0', '#C05A89' ],
-  //    config: {
-  //      'value': 'Betrag.sum',
-  //      'hierarchies': [
-  //        {
-  //          'datapackageHierarchy': 'administrative_classification',
-  //          'url': 'einzelplan',
-  //          'label': 'Einzelpläne'
-  //        },
-  //        {
-  //          'datapackageHierarchy': 'functional_classification',
-  //          'url': 'funktion',
-  //          'label': 'Funktionen'
-  //        }
-  //      ],
-  //      'filters': {
-  //        'Jahr': {
-  //          'name': 'date_2.Jahr',
-  //          'values': [{'label': 2017, 'value': 2017}, {'label': 2016, 'value': 2016}],
-  //          'type': 'number',
-  //          'default': true,
-  //          'label': 'Jahr'
-  //        },
-  //        'Typ': {
-  //          'name': 'fin_source_Typ.Typ',
-  //          'values': [
-  //            {
-  //              'label': 'Senatsverwaltungen',
-  //              'value': 1
-  //            },
-  //            {
-  //              'label': 'Verfassungsorgane',
-  //              'value': 2
-  //            },
-  //            {
-  //              'label': 'Bezirke',
-  //              'value': 3
-  //            }
-  //          ],
-  //          'type': 'string',
-  //          'default': false,
-  //          'defaultLabel': 'Alle',
-  //          'label': 'Typ'
-  //        },
-  //        'titelart': {
-  //          'name': 'direction_2.Titelart',
-  //          'values': [
-  //            {
-  //              'label': 'Ausgabetitel',
-  //              'value': 'Ausgabetitel'
-  //            },
-  //            {
-  //              'label': 'Einnahmetitel',
-  //              'value': 'Einnahmetitel'
-  //            }
-  //          ],
-  //          'default': true,
-  //          'type': 'string',
-  //          'label': 'Art'
-  //        }
-  //      }
-  //    },
       selectedHierarchy: {'levelsParams': []},
       filters: {},
       data: {},
@@ -162,9 +101,9 @@ export default {
     defaultFilters: function () {
       for (var k in this.config.filters) {
         if (this.config.filters[k].default) {
-          this.$set(this.filters, k, this.config.filters[k].values[0].value)
+          this.$set(this.filters, k, this.config.filters[k].values[0].defaultValue)
         } else {
-          this.$set(this.filters, k, '')
+          this.$set(this.filters, k, this.config.filters[k].values[0].value)
         }
       }
     },
@@ -252,7 +191,7 @@ export default {
     },
 
     getModel: function () {
-      var apiRequestUrl = `${this.apiurl}${this.datapackage}/model`
+      var apiRequestUrl = `${this.apiurl}${this.datapackage}/model/`
       return axios.get(apiRequestUrl).then(response => {
         this.model = response.data.model
         this.hasModel = true
@@ -321,8 +260,8 @@ export default {
       }
     },
 
-    formatValue: function (value) {
-      return accounting.formatMoney(value, '€', 0, '.')
+    formatValue: function (value, formatOptions) {
+      return accounting.formatMoney(value, formatOptions)
     },
 
     createApiRequestURL: function (rootLevel = false) {
@@ -335,7 +274,7 @@ export default {
         hierarchiesFilter = this.getHierarchies()
       }
       var filters = this.getFilters()
-      var apiRequestUrl = `${this.apiurl}${this.datapackage}/aggregate/?${filters}${hierarchiesFilter}&drilldown=${drilldown}&order=${this.config.value}:desc&pagesize=30`
+      var apiRequestUrl = `${this.apiurl}${this.datapackage}/aggregate/?${filters}${hierarchiesFilter}&drilldown=${drilldown}&order=${this.config.value[0]['field']}:desc&pagesize=30`
       return apiRequestUrl
     },
 
@@ -359,16 +298,16 @@ export default {
 
         var total = 0
         // Remove data with negative values
-        var valueDimension = this.config['value']
+        var valueDimension = this.config['value'][0]['field']
         this.data['cells'] = this.data['cells'].filter(function (c) { return c[valueDimension] > 0 })
 
         // Calculate total amount to use it in percentual calculations
         this.data['summary']['_value'] = 0
         for (i in this.data['cells']) {
-          total += this.data['cells'][i][this.config['value']]
+          total += this.data['cells'][i][this.config['value'][0]['field']]
           this.data['summary']['_value'] = total
         }
-        this.data['summary']['_valueFmt'] = this.formatValue(this.data['summary']['_value'])
+        this.data['summary']['_valueFmt'] = this.formatValue(this.data['summary']['_value'], this.config['value'][0]['formatOptions'])
 
         for (var i in this.data['cells']) {
           var levelsParams = ''
@@ -379,10 +318,10 @@ export default {
           if (this.selectedHierarchy['levelsParams'].length >= 1) {
             levelsParams = `${this.selectedHierarchy['levelsParams'].join('/')}/`
           }
-          this.data['cells'][i]['_value'] = this.data['cells'][i][this.config['value']]
+          this.data['cells'][i]['_value'] = this.data['cells'][i][this.config['value'][0]['field']]
           this.data['cells'][i]['_color'] = color(i)
           this.data['cells'][i]['_label'] = this.data['cells'][i][level[0]]
-          this.data['cells'][i]['_value_fmt'] = this.formatValue(this.data['cells'][i]['_value'])
+          this.data['cells'][i]['_value_fmt'] = this.formatValue(this.data['cells'][i]['_value'], this.config['value'][0]['formatOptions'])
           if (this.selectedHierarchy['levelsParams'].length < this.model.hierarchies[this.selectedHierarchy['hierarchy']['datapackageHierarchy']]['levels'].length - 1) {
             this.data['cells'][i]['_url'] = `#${this.selectedHierarchy['hierarchy']['url']}/${levelsParams}${this.data['cells'][i][level[1]]}${filters}`
           }
@@ -596,6 +535,7 @@ a {
   border-radius: 8px;
   pointer-events: none;
   z-index: 10;
+  display: block;
 }
 
 </style>
