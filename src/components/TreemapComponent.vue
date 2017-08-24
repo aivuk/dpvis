@@ -13,9 +13,9 @@
       </a>
       </div>
       <div class="filters">
-        <div class="filter" v-bind:key="filterName" v-for="(filter, filterName) in config['filters']">
+        <div class="filter" :key="filterName" v-for="(filter, filterName) in config['filters']">
           {{ filter.label }}
-          <b-select class="btn btn-default dropdown-toggle" :onchange="addFilter()" v-model="filters[filterName]">
+          <b-select @input="addFilters()" class="btn btn-default dropdown-toggle" v-model="filters[filterName]">
             <option :value="filterValue.value" :key="filterValue.value" v-for="filterValue in filter.values">{{filterValue.label}}</option>
           </b-select>
         </div>
@@ -100,11 +100,7 @@ export default {
 
     defaultFilters: function () {
       for (var k in this.config.filters) {
-        if (this.config.filters[k].default) {
-          this.$set(this.filters, k, this.config.filters[k].defaultValue)
-        } else {
-          this.$set(this.filters, k, '')
-        }
+        this.filters[k] = this.config.filters[k].defaultValue
       }
     },
 
@@ -159,7 +155,7 @@ export default {
       window.location.hash = `/${hierarchyURL.join('/')}?${qs.stringify(this.filters)}`
     },
 
-    addFilter: function () {
+    addFilters: function () {
       var URLarguments = parseURL(window.location.toString())
       window.location.hash = `/${URLarguments[0].join('/')}?${qs.stringify(this.filters)}`
     },
@@ -238,20 +234,6 @@ export default {
           filters += `${this.config['filters'][k]['name']}:${filterArgumentQuote}${this.filters[k]}${filterArgumentQuote}|`
         }
       }
-
-     // if (filters === '') {
-     //   for (k in this.config['filters']) {
-     //     if (this.config['filters'][k]['default']) {
-     //       var defaultFilter = this.config['filters'][k]['name']
-     //       var defaultFilterValue = this.config['filters'][k]['defaultValue']
-     //       filterArgumentQuote = ''
-     //       if (this.config['filters'][k]['type'] === 'string') {
-     //         filterArgumentQuote = '"'
-     //       }
-     //       filters += `${defaultFilter}:${filterArgumentQuote}${defaultFilterValue}${filterArgumentQuote}|`
-     //     }
-     //   }
-     // }
 
       if (filters !== '') {
         return `cut=${filters}&`
@@ -346,9 +328,19 @@ export default {
     'config.value': function (newConfig) {
       this.updateData()
     },
-    'config.filters': function (newConfig) {
-      this.defaultFilters()
-      this.updateData()
+    'config': {
+      'handler': function (newConfig) {
+        this.defaultFilters()
+        this.addFilters()
+        this.updateData()
+      },
+      deep: true
+    },
+    'filters': {
+      'handler': function (newFilters) {
+        this.addFilters()
+      },
+      deep: true
     }
   }
 }
