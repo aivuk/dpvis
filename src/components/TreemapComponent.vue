@@ -76,6 +76,7 @@ export default {
         '#59449B', '#6E3F7C', '#6A246D', '#8A4873', '#EB0080',
         '#EF58A0', '#C05A89' ],
       selectedHierarchy: {'levelsParams': []},
+      selectedMeasure: 0,
       filters: {},
       data: {},
       hierarchyColors: {}
@@ -101,9 +102,9 @@ export default {
     defaultFilters: function () {
       for (var k in this.config.filters) {
         if (this.config.filters[k].default) {
-          this.$set(this.filters, k, this.config.filters[k].values[0].defaultValue)
+          this.$set(this.filters, k, this.config.filters[k].values[this.selectedMeasure].defaultValue)
         } else {
-          this.$set(this.filters, k, this.config.filters[k].values[0].value)
+          this.$set(this.filters, k, this.config.filters[k].values[this.selectedMeasure].value)
         }
       }
     },
@@ -243,7 +244,7 @@ export default {
         for (k in this.config['filters']) {
           if (this.config['filters'][k]['default']) {
             var defaultFilter = this.config['filters'][k]['name']
-            var defaultFilterValue = this.config['filters'][k]['values'][0]['value']
+            var defaultFilterValue = this.config['filters'][k]['values'][this.selectedMeasure]['value']
             filterArgumentQuote = ''
             if (this.config['filters'][k]['type'] === 'string') {
               filterArgumentQuote = '"'
@@ -274,7 +275,7 @@ export default {
         hierarchiesFilter = this.getHierarchies()
       }
       var filters = this.getFilters()
-      var apiRequestUrl = `${this.apiurl}${this.datapackage}/aggregate/?${filters}${hierarchiesFilter}&drilldown=${drilldown}&order=${this.config.value[0]['field']}:desc&pagesize=30`
+      var apiRequestUrl = `${this.apiurl}${this.datapackage}/aggregate/?${filters}${hierarchiesFilter}&drilldown=${drilldown}&order=${this.config.value[this.selectedMeasure]['field']}:desc&pagesize=30`
       return apiRequestUrl
     },
 
