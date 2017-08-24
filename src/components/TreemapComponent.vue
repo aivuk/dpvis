@@ -16,8 +16,7 @@
         <div class="filter" v-bind:key="filterName" v-for="(filter, filterName) in config['filters']">
           {{ filter.label }}
           <b-select class="btn btn-default dropdown-toggle" :onchange="addFilter()" v-model="filters[filterName]">
-            <option value=''>{{filter.defaultLabel}}</option>
-            <option :selected='filterValue.value === filter.defaultValue' :value="filterValue.value" :key="filterValue.label" v-for="filterValue in filter.values">{{filterValue.label}}</option>
+            <option :value="filterValue.value" :key="filterValue.value" v-for="filterValue in filter.values">{{filterValue.label}}</option>
           </b-select>
         </div>
       </div>
@@ -102,9 +101,9 @@ export default {
     defaultFilters: function () {
       for (var k in this.config.filters) {
         if (this.config.filters[k].default) {
-          this.$set(this.filters, k, this.config.filters[k].values[this.selectedMeasure].defaultValue)
+          this.$set(this.filters, k, this.config.filters[k].defaultValue)
         } else {
-          this.$set(this.filters, k, this.config.filters[k].values[this.selectedMeasure].value)
+          this.$set(this.filters, k, '')
         }
       }
     },
@@ -240,19 +239,19 @@ export default {
         }
       }
 
-      if (filters === '') {
-        for (k in this.config['filters']) {
-          if (this.config['filters'][k]['default']) {
-            var defaultFilter = this.config['filters'][k]['name']
-            var defaultFilterValue = this.config['filters'][k]['values'][this.selectedMeasure]['value']
-            filterArgumentQuote = ''
-            if (this.config['filters'][k]['type'] === 'string') {
-              filterArgumentQuote = '"'
-            }
-            filters += `${defaultFilter}:${filterArgumentQuote}${defaultFilterValue}${filterArgumentQuote}|`
-          }
-        }
-      }
+     // if (filters === '') {
+     //   for (k in this.config['filters']) {
+     //     if (this.config['filters'][k]['default']) {
+     //       var defaultFilter = this.config['filters'][k]['name']
+     //       var defaultFilterValue = this.config['filters'][k]['defaultValue']
+     //       filterArgumentQuote = ''
+     //       if (this.config['filters'][k]['type'] === 'string') {
+     //         filterArgumentQuote = '"'
+     //       }
+     //       filters += `${defaultFilter}:${filterArgumentQuote}${defaultFilterValue}${filterArgumentQuote}|`
+     //     }
+     //   }
+     // }
 
       if (filters !== '') {
         return `cut=${filters}&`
@@ -299,16 +298,16 @@ export default {
 
         var total = 0
         // Remove data with negative values
-        var valueDimension = this.config['value'][0]['field']
+        var valueDimension = this.config['value'][this.selectedMeasure]['field']
         this.data['cells'] = this.data['cells'].filter(function (c) { return c[valueDimension] > 0 })
 
         // Calculate total amount to use it in percentual calculations
         this.data['summary']['_value'] = 0
         for (i in this.data['cells']) {
-          total += this.data['cells'][i][this.config['value'][0]['field']]
+          total += this.data['cells'][i][this.config['value'][this.selectedMeasure]['field']]
           this.data['summary']['_value'] = total
         }
-        this.data['summary']['_valueFmt'] = this.formatValue(this.data['summary']['_value'], this.config['value'][0]['formatOptions'])
+        this.data['summary']['_valueFmt'] = this.formatValue(this.data['summary']['_value'], this.config['value'][this.selectedMeasure]['formatOptions'])
 
         for (var i in this.data['cells']) {
           var levelsParams = ''
@@ -322,7 +321,7 @@ export default {
           this.data['cells'][i]['_value'] = this.data['cells'][i][this.config['value'][0]['field']]
           this.data['cells'][i]['_color'] = color(i)
           this.data['cells'][i]['_label'] = this.data['cells'][i][level[0]]
-          this.data['cells'][i]['_value_fmt'] = this.formatValue(this.data['cells'][i]['_value'], this.config['value'][0]['formatOptions'])
+          this.data['cells'][i]['_value_fmt'] = this.formatValue(this.data['cells'][i]['_value'], this.config['value'][this.selectedMeasure]['formatOptions'])
           if (this.selectedHierarchy['levelsParams'].length < this.model.hierarchies[this.selectedHierarchy['hierarchy']['datapackageHierarchy']]['levels'].length - 1) {
             this.data['cells'][i]['_url'] = `#${this.selectedHierarchy['hierarchy']['url']}/${levelsParams}${this.data['cells'][i][level[1]]}${filters}`
           }
@@ -348,6 +347,7 @@ export default {
       this.updateData()
     },
     'config.filters': function (newConfig) {
+      this.defaultFilters()
       this.updateData()
     }
   }
