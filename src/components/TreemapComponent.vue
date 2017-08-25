@@ -271,7 +271,7 @@ export default {
         if (this.selectedHierarchy['levelsParams'].length === 0) {
           this.getRootColors(color, this.data)
         } else {
-          var rootColor = d3.rgb(this.hierarchyColors[this.selectedHierarchy['levelsParams'][0]])
+          var rootColor = d3.rgb(this.hierarchyColors[decodeURI(this.selectedHierarchy['levelsParams'][0])])
           color = d3.scale.linear()
           color = color.interpolate(d3.interpolateRgb)
           color = color.range([rootColor.brighter(), rootColor.darker().darker()])
