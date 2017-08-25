@@ -10,8 +10,7 @@ function resolve (dir) {
 module.exports = {
   entry: {
     docs: './src/docs.js',
-    ['dpvis']: './src/lib.js',
-    'dpTreemap': './src/main.js'
+    ['dpvis']: './src/dpTreemap.js'
   },
   output: {
     path: config.build.assetsRoot,

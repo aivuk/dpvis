@@ -1,6 +1,6 @@
 <template>
   <div id="app">
-    <treemap></treemap>
+    <router-view></router-view>
   </div>
 </template>
 

@@ -13,6 +13,7 @@
     "dev:varlib": "webpack --config build/webpack.varlib.conf.js --watch --progress --hide-modules",
     "dev:docs": "node build/dev-server.js",
     "build": "npm run build:lib && npm run build:docs",
+    "build:varlib": "node build/build-varlib.js",
     "build:lib": "node build/build-lib.js",
     "build:docs": "node build/build.js",
     "unit": "cross-env BABEL_ENV=test karma start test/unit/karma.conf.js --single-run",

@@ -51,10 +51,10 @@ export default class Treemap {
        .style('height', function (d) { return Math.max(0, d.dy - 1) + 'px' })
     }
 
-    d3.select('.tooltip').remove()
+    d3.select('.treemap-tooltip').remove()
 
     var div = d3.select('body').append('div')
-        .attr('class', 'tooltip')
+        .attr('class', 'treemap-tooltip')
         .style('opacity', 0)
 
     this.div.datum(root).selectAll('.node')

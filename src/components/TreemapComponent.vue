@@ -518,7 +518,7 @@ a {
   content: "\f148";
 }
 
-.tooltip {
+.treemap-tooltip {
   position: absolute;
   text-align: center;
   padding: 10px;
