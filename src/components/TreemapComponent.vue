@@ -15,7 +15,7 @@
       <div class="filters">
         <div class="filter" :key="filterName" v-for="(filter, filterName) in config['filters']">
           {{ filter.label }}
-          <b-select @input="addFilters()" class="btn btn-default dropdown-toggle" v-model="filters[filterName]">
+          <b-select @input="addFilters()" class="dropdown-toggle" v-model="filters[filterName]">
             <option :value="filterValue.value" :key="filterValue.value" v-for="filterValue in filter.values">{{filterValue.label}}</option>
           </b-select>
         </div>
