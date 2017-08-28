@@ -12,6 +12,13 @@
         {{hierq['label']}}
       </a>
       </div>
+      <div class="measures">
+        <b-field>
+          <b-select @input="updateData()" v-model="selectedMeasure">
+            <option :value="i" :key="measure.label"  v-for="(measure, i) in config['value']">{{measure.label}}</option>
+          </b-select>
+        </b-field>
+      </div>
       <div class="filters">
         <div class="filter" :key="filterName" v-for="(filter, filterName) in config['filters']">
           {{ filter.label }}
@@ -304,7 +311,7 @@ export default {
           if (this.selectedHierarchy['levelsParams'].length >= 1) {
             levelsParams = `${this.selectedHierarchy['levelsParams'].join('/')}/`
           }
-          this.data['cells'][i]['_value'] = this.data['cells'][i][this.config['value'][0]['field']]
+          this.data['cells'][i]['_value'] = this.data['cells'][i][this.config['value'][this.selectedMeasure]['field']]
           this.data['cells'][i]['_color'] = color(i)
           this.data['cells'][i]['_label'] = this.data['cells'][i][level[0]]
           this.data['cells'][i]['_value_fmt'] = this.formatValue(this.data['cells'][i]['_value'], this.config['value'][this.selectedMeasure]['formatOptions'])
@@ -371,6 +378,10 @@ export default {
   }
 
   .hierarchies {
+    float: left;
+  }
+
+  .measures {
     float: left;
   }
 }
