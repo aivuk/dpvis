@@ -243,7 +243,11 @@ export default {
     },
 
     formatValue: function (value, formatOptions) {
-      return accounting.formatMoney(value, formatOptions)
+      var postfix = ''
+      if (formatOptions.postfix) {
+        postfix = formatOptions.postfix
+      }
+      return accounting.formatMoney(value, formatOptions) + postfix
     },
 
     createApiRequestURL: function (rootLevel = false) {
