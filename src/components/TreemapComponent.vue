@@ -12,7 +12,7 @@
         {{hierq['label']}}
       </a>
       </div>
-      <div class="measures">
+      <div class="measures" v-if="config['value'].length > 1">
         <b-field>
           <b-select @input="updateData()" v-model="selectedMeasure">
             <option :value="i" :key="measure.label"  v-for="(measure, i) in config['value']">{{measure.label}}</option>
