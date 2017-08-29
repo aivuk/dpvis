@@ -19,6 +19,15 @@
           </b-select>
         </b-field>
       </div>
+      <div class="scales" v-if="config['scale'].length >= 1">
+        <div class="filter">
+          <b-field>
+            <b-select @input="updateScale()" v-model="selectedScale">
+              <option :value="i" :key="scale.label"  v-for="(scale, i) in config['scale']">{{scale.label}}</option>
+            </b-select>
+          </b-field>
+        </div>
+      </div>
       <div class="filters">
         <div class="filter" :key="filterName" v-for="(filter, filterName) in config['filters']">
           {{ filter.label }}
@@ -83,6 +92,7 @@ export default {
         '#EF58A0', '#C05A89' ],
       selectedHierarchy: {'levelsParams': []},
       selectedMeasure: 0,
+      selectedScale: 0,
       filters: {},
       data: {},
       hierarchyColors: {}
@@ -118,6 +128,13 @@ export default {
       } else {
         return ''
       }
+    },
+
+    updateScale: function () {
+      for (var i in this.data['cells']) {
+        this.data['cells'][i]['_value_fmt'] = this.formatValue(this.data['cells'][i]['_value'], this.config['value'][this.selectedMeasure]['formatOptions'])
+      }
+      this.treemap.render(this.data)
     },
 
     getURLParameters: function () {
@@ -254,6 +271,11 @@ export default {
       if (formatOptions.postfix) {
         postfix = formatOptions.postfix
       }
+
+      if (this.selectedScale >= 1) {
+        value = value / Number(this.config['scale'][this.selectedScale]['number'])
+        postfix = `${postfix} / ${this.config['scale'][this.selectedScale]['description']}`
+      }
       return accounting.formatMoney(value, formatOptions) + postfix
     },
 
@@ -362,6 +384,10 @@ export default {
 .treemap-content {
   max-width: 1200px;
   margin: auto;
+}
+
+.control {
+  position: static;
 }
 
 .controls {
