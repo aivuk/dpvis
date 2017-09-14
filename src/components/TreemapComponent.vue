@@ -211,6 +211,9 @@ export default {
     },
 
     getModel: function () {
+      if (this.config.hasOwnProperty('datapackage')) {
+        this.datapackage = this.config.datapackage
+      }
       var apiRequestUrl = `${this.apiurl}${this.datapackage}/model/`
       return axios.get(apiRequestUrl).then(response => {
         this.model = response.data.model
