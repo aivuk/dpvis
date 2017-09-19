@@ -45,7 +45,7 @@
         <th class="num">Betrag</th>
         <th class="num">Anteil</th>
       </tr>
-      <tr v-bind:class="{small: cell['_small']}" v-for="cell in data['cells']" v-bind:key="cell['_label']">
+      <tr v-bind:class="{small: cell['_small']}" v-for="(cell, i) in data['cells']" :key="i">
           <td>
           <i :style="`color: ${cell['_color']};`" class="fa fa-square"></i>
           <a v-if="cell['_url']" :href="cell['_url']">{{ cell['_label'] }}</a>
