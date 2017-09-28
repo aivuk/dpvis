@@ -163,7 +163,11 @@ export default {
         for (var i in hierarchy['levels']) {
           if (i < levelsLength) {
             var hierqName = hierarchy['levels'][i]
-            hierqQuery += `|${this.model.dimensions[hierqName]['key_ref']}:"${this.selectedHierarchy['levelsParams'][i]}"`
+            var bar = ''
+            if (i > 0) {
+              bar = '|'
+            }
+            hierqQuery += `${bar}${this.model.dimensions[hierqName]['key_ref']}:"${this.selectedHierarchy['levelsParams'][i]}"`
           }
         }
       }
@@ -263,7 +267,7 @@ export default {
       }
 
       if (filters !== '') {
-        return `cut=${filters}&`
+        return `cut=${filters}`
       } else {
         return ''
       }
@@ -390,7 +394,7 @@ export default {
 }
 
 .control {
-  position: static;
+  position: static !important;
 }
 
 .controls {
