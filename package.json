@@ -1,6 +1,6 @@
 {
   "name": "dpvis",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Visualization library for Datapackages",
   "author": "Edgar Zanella Alvarenga <e@vaz.io>",
   "main": "dist/lib/dpvis.min.js",
