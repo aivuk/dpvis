@@ -15,7 +15,7 @@
       <div class="measures" v-if="config['value'].length > 1">
         <b-field>
           <b-select @input="updateData()" v-model="selectedMeasure">
-            <option :value="i" :key="measure.label"  v-for="(measure, i) in config['value']">{{measure.label}}</option>
+            <option :value="i" :key="measure.label" v-for="(measure, i) in config['value']">{{measure.label}}</option>
           </b-select>
         </b-field>
       </div>
@@ -32,7 +32,7 @@
         <div class="filter" :key="filterName" v-for="(filter, filterName) in config['filters']">
           {{ filter.label }}
           <b-select @input="addFilters()" class="dropdown-toggle" v-model="filters[filterName]">
-            <option :value="filterValue.value" :key="filterValue.value" v-for="filterValue in filter.values">{{filterValue.label}}</option>
+            <option :value="filterValue.value" :key="filterValue.value" v-if="!filter['hasAll'] && filterValue.value !== ''" v-for="filterValue in filter.values">{{filterValue.label}}</option>
           </b-select>
         </div>
       </div>
