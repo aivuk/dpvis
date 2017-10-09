@@ -39,6 +39,10 @@
     </div>
     <div id="treemap" class="treemap">
     </div>
+    <div id="download">
+      <a :href="resource">csv</a>
+      <a :href="datapackageFile">Datapackage</a>
+    </div>
     <table class="table table-condensed">
       <tr>
         <th>Titel</th>
@@ -95,7 +99,9 @@ export default {
       selectedScale: 0,
       filters: {},
       data: {},
-      hierarchyColors: {}
+      hierarchyColors: {},
+      resource: '',
+      datapackageFile: ''
     }
   },
 
@@ -218,13 +224,21 @@ export default {
       if (this.config.hasOwnProperty('datapackage')) {
         this.datapackage = this.config.datapackage
       }
-      var apiRequestUrl = `${this.apiurl}${this.datapackage}/model/`
-      return axios.get(apiRequestUrl).then(response => {
-        this.model = response.data.model
-        this.hasModel = true
-        var hierarchyName = this.selectedHierarchy['hierarchy']['datapackageHierarchy']
-        this.$set(this.selectedHierarchy, 'levels', this.model['hierarchies'][hierarchyName]['levels'])
-        this.defaultFilters()
+
+      var datapackagePath = this.datapackage.replace(':', '/')
+      var datapackageUrl = `https://s3.amazonaws.com/datastore.openspending.org/${datapackagePath}/`
+      this.datapackageFile= datapackageUrl + 'datapackage.json'
+      return axios.get(this.datapackageFile).then(response => {
+        this.resource = datapackageUrl + response.data.resources[0].path
+
+        var apiRequestUrl = `${this.apiurl}${this.datapackage}/model/`
+        return axios.get(apiRequestUrl).then(response => {
+          this.model = response.data.model
+          this.hasModel = true
+          var hierarchyName = this.selectedHierarchy['hierarchy']['datapackageHierarchy']
+          this.$set(this.selectedHierarchy, 'levels', this.model['hierarchies'][hierarchyName]['levels'])
+          this.defaultFilters()
+        })
       })
     },
 
@@ -494,6 +508,22 @@ a {
     text-decoration: none;
   }
 
+}
+
+#download {
+  text-align: right;
+  margint-top: 5px;
+
+  a {
+    color: black;
+    border: 1px solid black;
+    padding: 0 5px;
+
+    &:hover {
+      color: white;
+      background-color: black;
+    }
+  }
 }
 
 .table {
