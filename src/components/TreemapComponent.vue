@@ -32,16 +32,12 @@
         <div class="filter" :key="filterName" v-for="(filter, filterName) in config['filters']">
           {{ filter.label }}
           <b-select @input="addFilters()" class="dropdown-toggle" v-model="filters[filterName]">
-            <option :value="filterValue.value" :key="filterValue.value" v-if="!filter['hasAll'] && filterValue.value !== ''" v-for="filterValue in filter.values">{{filterValue.label}}</option>
+            <option :value="filterValue.value" :key="filterValue.value" v-for="filterValue in filter.values">{{filterValue.label}}</option>
           </b-select>
         </div>
       </div>
     </div>
     <div id="treemap" class="treemap">
-    </div>
-    <div id="download">
-      <a :href="resource">csv</a>
-      <a :href="datapackageFile">Datapackage</a>
     </div>
     <table class="table table-condensed">
       <tr>
@@ -68,6 +64,9 @@
         <th class="num">100%</th>
       </tr>
     </table>
+    <div id="download">
+      <a :href="resource">download<i class="fa fa-download" aria-hidden="true"></i></a>
+    </div>
   </div>
 </template>
 
@@ -89,11 +88,9 @@ export default {
       model: {},
       hasModel: false,
       colors: [
-        '#CF3D1E', '#F15623', '#F68B1F', '#FFC60B', '#DFCE21',
-        '#BCD631', '#95C93D', '#48B85C', '#00833D', '#00B48D',
-        '#60C4B1', '#27C4F4', '#478DCB', '#3E67B1', '#4251A3',
-        '#59449B', '#6E3F7C', '#6A246D', '#8A4873', '#EB0080',
-        '#EF58A0', '#C05A89' ],
+        '#AA00FF', '#6200EA', '#304FFE', '#2962FF', '#0091EA',
+        '#00B8D4', '#00BFA5', '#64DD17', '#00C853'
+      ],
       selectedHierarchy: {'levelsParams': []},
       selectedMeasure: 0,
       selectedScale: 0,
@@ -227,7 +224,7 @@ export default {
 
       var datapackagePath = this.datapackage.replace(':', '/')
       var datapackageUrl = `https://s3.amazonaws.com/datastore.openspending.org/${datapackagePath}/`
-      this.datapackageFile= datapackageUrl + 'datapackage.json'
+      this.datapackageFile = datapackageUrl + 'datapackage.json'
       return axios.get(this.datapackageFile).then(response => {
         this.resource = datapackageUrl + response.data.resources[0].path
 
@@ -310,7 +307,7 @@ export default {
         hierarchiesFilter = this.getHierarchies()
       }
       var filters = this.getFilters()
-      var apiRequestUrl = `${this.apiurl}${this.datapackage}/aggregate/?${filters}${hierarchiesFilter}&drilldown=${drilldown}&order=${this.config.value[this.selectedMeasure]['field']}:desc&pagesize=30`
+      var apiRequestUrl = `${this.apiurl}${this.datapackage}/aggregate/?${filters}${hierarchiesFilter}&drilldown=${drilldown}&order=${this.config.value[this.selectedMeasure]['field']}:desc`
       return apiRequestUrl
     },
 
@@ -334,8 +331,8 @@ export default {
 
         var total = 0
         // Remove data with negative values
-        var valueDimension = this.config['value'][this.selectedMeasure]['field']
-        this.data['cells'] = this.data['cells'].filter(function (c) { return c[valueDimension] > 0 })
+        // var valueDimension = this.config['value'][this.selectedMeasure]['field']
+        // this.data['cells'] = this.data['cells']
 
         // Calculate total amount to use it in percentual calculations
         this.data['summary']['_value'] = 0
@@ -511,7 +508,7 @@ a {
 }
 
 #download {
-  text-align: right;
+  text-align: left;
   margint-top: 5px;
 
   a {

@@ -34,14 +34,16 @@ export default class Treemap {
       children: []
     }
     for (var i = 0; i < data.cells.length; i += 1) {
-      root.children.push({
-        name: data.cells[i]['_label'],
-        value: data.cells[i]['_value'],
-        value_fmt: data.cells[i]['_value_fmt'],
-        percentage: data.cells[i]['_percentage'],
-        href: data.cells[i]['_url'],
-        color: data.cells[i]['_color']
-      })
+      if (data.cells[i]['_value'] > 0) {
+        root.children.push({
+          name: data.cells[i]['_label'],
+          value: data.cells[i]['_value'],
+          value_fmt: data.cells[i]['_value_fmt'],
+          percentage: data.cells[i]['_percentage'],
+          href: data.cells[i]['_url'],
+          color: data.cells[i]['_color']
+        })
+      }
     }
 
     function positionNode (d) {

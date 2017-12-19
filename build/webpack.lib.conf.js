@@ -43,14 +43,14 @@ var webpackConfig = merge(baseWebpackConfig, {
     // extract css into its own file
     new ExtractTextPlugin({
       filename: utils.assetsLibPath('[name].min.css')
-    }),
+    })
     // Compress extracted CSS. We are using this plugin so that possible
     // duplicated CSS from different components can be deduped.
-    new OptimizeCSSPlugin({
-      cssProcessorOptions: {
-        safe: true
-      }
-    })
+    //new OptimizeCSSPlugin({
+    //  cssProcessorOptions: {
+    //    safe: true
+    //  }
+    //})
   ]
 })
 
