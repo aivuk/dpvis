@@ -144,7 +144,7 @@ export default {
       var URLarguments = parseURL(window.location.toString())
       if (URLarguments[0].length === 0) {
         this.$set(this.selectedHierarchy, 'hierarchy', this.config['hierarchies'][0])
-        window.location.hash = '/' + this.config['hierarchies'][0]['url']
+        window.location.replace('#' + this.config['hierarchies'][0]['url'])
       } else {
         var hierarchy = this.config['hierarchies'].find(function (h) { return h['url'] === URLarguments[0][0] })
         this.$set(this.selectedHierarchy, 'hierarchy', hierarchy)
@@ -188,7 +188,7 @@ export default {
 
     addFilters: function () {
       var URLarguments = parseURL(window.location.toString())
-      window.location.hash = `/${URLarguments[0].join('/')}?${qs.stringify(this.filters)}`
+      window.location.replace(`#${URLarguments[0].join('/')}?${qs.stringify(this.filters)}`)
     },
 
     getDrilldown: function (levelNumber = this.currentLevel) {
