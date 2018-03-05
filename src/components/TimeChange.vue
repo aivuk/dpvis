@@ -27,7 +27,14 @@ export default {
         scales: {
           yAxes: [{
             ticks: {
-              beginAtZero: true
+              beginAtZero: true,
+              callback: (value, index, values) => {
+                if (parseInt(value) >= 1000) {
+                  return value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') + '€'
+                } else {
+                  return value + '€'
+                }
+              }
             }
           }]
         },
@@ -116,28 +123,36 @@ export default {
 
         let yearsLabels = {}
         let yearsData = {}
+        let phasesNum = 0
+        let phases = []
+        let minYear, maxYear
 
         for (var k in years) {
           years[k].sort((a, b) => a[0] > b[0])
           yearsLabels[k] = years[k].map(x => x[0])
           yearsData[k] = years[k].map(x => x[1])
+          phasesNum += 1
+          phases.push(k)
         }
 
-        let minIst = years['Ist'][0][0]
-        let minPlan = years['Plan'][0][0]
-
-        if (minIst < minPlan) {
-          for (let y = minIst; y < minPlan; ++y) {
-            yearsData['Plan'] = [0, ...yearsData['Plan']]
+        if (phasesNum > 1) {
+          let minIst = years['Ist'][0][0]
+          let minPlan = years['Plan'][0][0]
+          if (minIst < minPlan) {
+            for (let y = minIst; y < minPlan; ++y) {
+              yearsData['Plan'] = [0, ...yearsData['Plan']]
+            }
+          } else if (minPlan < minIst) {
+            for (let y = minPlan; y < minIst; ++y) {
+              yearsData['Ist'] = [0, ...yearsData['Ist']]
+            }
           }
-        } else if (minPlan < minIst) {
-          for (let y = minPlan; y < minIst; ++y) {
-            yearsData['Ist'] = [0, ...yearsData['Ist']]
-          }
+          minYear = Math.min(years['Ist'][0][0], years['Plan'][0][0])
+          maxYear = Math.max(years['Ist'][years['Ist'].length - 1][0], years['Plan'][years['Plan'].length - 1][0])
+        } else {
+          minYear = Math.min(years[phases[0]])
+          maxYear = Math.max(years[phases[0]])
         }
-
-        let minYear = Math.min(years['Ist'][0][0], years['Plan'][0][0])
-        let maxYear = Math.max(years['Ist'][years['Ist'].length - 1][0], years['Plan'][years['Plan'].length - 1][0])
 
         let labels = []
         console.log(minYear, maxYear, years)
