@@ -39,7 +39,8 @@
     </div>
     <div id="treemap" class="treemap">
     </div>
-    <table class="table table-condensed">
+    <div id="table-toggle" @click="showTable = !showTable">{{ (!showTable)?'Übersicht als Liste':'Zuklappen' }}</div>
+    <table class="table table-condensed" v-if="showTable">
       <tr>
         <th>Titel</th>
         <th class="num">Betrag</th>
@@ -65,13 +66,14 @@
       </tr>
     </table>
     <div id="download">
-      <a :href="resource">download<i class="fa fa-download" aria-hidden="true"></i></a>
+      <a :href="resource">download<!-- <i class="fa fa-download" aria-hidden="true"></i> --></a>
     </div>
   </div>
 </template>
 
 <script>
 import Treemap from '../treemap'
+import { mapGetters, mapMutations } from 'vuex'
 import parseURL from '../utils/urlParser'
 import axios from 'axios'
 import * as d3 from 'd3'
@@ -81,7 +83,7 @@ import * as accounting from 'accounting'
 export default {
   name: 'treemap',
 
-  props: [ 'datapackage', 'apiurl', 'config', 'update' ],
+  props: [ 'apiurl', 'config', 'update' ],
 
   data () {
     return {
@@ -91,22 +93,25 @@ export default {
         '#AA00FF', '#6200EA', '#304FFE', '#2962FF', '#0091EA',
         '#00B8D4', '#00BFA5', '#64DD17', '#00C853'
       ],
-      selectedHierarchy: {'levelsParams': []},
       selectedMeasure: 0,
       selectedScale: 0,
-      filters: {},
       data: {},
       hierarchyColors: {},
       resource: '',
+      showTable: false,
       datapackageFile: ''
     }
   },
 
   computed: {
-    currentLevel: function () { return this.selectedHierarchy['levelsParams'].length }
+    currentLevel: function () { return this.selectedHierarchy['levelsParams'].length },
+    ...mapGetters([
+      'selectedHierarchy', 'filters'
+    ])
   },
 
   mounted () {
+    this.setConfig(this.config)
     this.loadDatapackage()
   },
 
@@ -120,7 +125,9 @@ export default {
 
     defaultFilters: function () {
       for (var k in this.config.filters) {
-        this.filters[k] = this.config.filters[k].defaultValue
+        console.log(this.config.filters[k].defaultValue)
+        this.addFilter({'name': k, 'value': this.config.filters[k].defaultValue})
+//        this.filters[k] = this.config.filters[k].defaultValue
       }
     },
 
@@ -143,17 +150,20 @@ export default {
     getURLParameters: function () {
       var URLarguments = parseURL(window.location.toString())
       if (URLarguments[0].length === 0) {
-        this.$set(this.selectedHierarchy, 'hierarchy', this.config['hierarchies'][0])
+        // this.$set(this.selectedHierarchy, 'hierarchy', this.config['hierarchies'][0])
+        this.setHierarchy(this.config['hierarchies'][0])
         window.location.replace('#' + this.config['hierarchies'][0]['url'])
       } else {
         var hierarchy = this.config['hierarchies'].find(function (h) { return h['url'] === URLarguments[0][0] })
-        this.$set(this.selectedHierarchy, 'hierarchy', hierarchy)
+        // this.$set(this.selectedHierarchy, 'hierarchy', hierarchy)
+        this.setHierarchy(hierarchy)
       }
-      this.$set(this.selectedHierarchy, 'levelsParams', URLarguments[0].splice(1))
+      // this.$set(this.selectedHierarchy, 'levelsParams', URLarguments[0].splice(1))
+      this.setLevelsParams(URLarguments[0].splice(1))
 
       var urlFilters = URLarguments[1]
       for (var k in urlFilters) {
-        this.filters[k] = urlFilters[k]
+        this.addFilter({name: k, value: urlFilters[k]})
       }
     },
 
@@ -188,6 +198,7 @@ export default {
 
     addFilters: function () {
       var URLarguments = parseURL(window.location.toString())
+      console.log(URLarguments)
       window.location.replace(`#${URLarguments[0].join('/')}?${qs.stringify(this.filters)}`)
     },
 
@@ -204,6 +215,7 @@ export default {
         var cellLevel = data['cells'][i][level[1]]
         this.hierarchyColors[cellLevel] = color(i)
       }
+      this.setHierarchyColors(this.hierarchyColors)
     },
 
     updateData: function () {
@@ -231,6 +243,7 @@ export default {
         var apiRequestUrl = `${this.apiurl}${this.datapackage}/model/`
         return axios.get(apiRequestUrl).then(response => {
           this.model = response.data.model
+          this.setModel(this.model)
           this.hasModel = true
           var hierarchyName = this.selectedHierarchy['hierarchy']['datapackageHierarchy']
           this.$set(this.selectedHierarchy, 'levels', this.model['hierarchies'][hierarchyName]['levels'])
@@ -355,8 +368,8 @@ export default {
           this.data['cells'][i]['_color'] = color(i)
           this.data['cells'][i]['_label'] = this.data['cells'][i][level[0]]
           this.data['cells'][i]['_value_fmt'] = this.formatValue(this.data['cells'][i]['_value'], this.config['value'][this.selectedMeasure]['formatOptions'])
-          if (this.selectedHierarchy['levelsParams'].length < this.model.hierarchies[this.selectedHierarchy['hierarchy']['datapackageHierarchy']]['levels'].length - 1) {
-            this.data['cells'][i]['_url'] = `#${this.selectedHierarchy['hierarchy']['url']}/${levelsParams}${this.data['cells'][i][level[1]]}${filters}`
+          if (this.selectedHierarchy['levelsParams'].length < this.model.hierarchies[this.selectedHierarchy['hierarchy']['datapackageHierarchy']]['levels'].length) {
+            this.data['cells'][i]['_url'] = `#${this.selectedHierarchy['hierarchy']['url']}/${levelsParams}${encodeURI(this.data['cells'][i][level[1]])}${filters}`
           }
           this.data['cells'][i]['_percentage'] = this.data['cells'][i]['_value'] / total
           this.data['cells'][i]['_small'] = this.data['cells'][i]['_percentage'] < 0.01
@@ -369,7 +382,8 @@ export default {
       }).catch(e => {
         console.log(e)
       })
-    }
+    },
+    ...mapMutations(['setHierarchy', 'setLevelsParams', 'addFilter', 'setConfig', 'setModel', 'setHierarchyColors'])
   },
 
   watch: {
@@ -389,6 +403,7 @@ export default {
     },
     'filters': {
       'handler': function (newFilters) {
+        console.log('FILTERING')
         this.addFilters()
       },
       deep: true
@@ -521,6 +536,14 @@ a {
       background-color: black;
     }
   }
+}
+
+#table-toggle {
+  height: 80px;
+  margin: 0 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .table {

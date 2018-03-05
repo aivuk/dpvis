@@ -9,8 +9,7 @@ function resolve (dir) {
 
 module.exports = {
   entry: {
-    docs: './src/docs.js',
-    ['dpvis']: './src/dpTreemap.js'
+    app: './src/dev.js',
   },
   output: {
     path: config.build.assetsRoot,
@@ -22,6 +21,7 @@ module.exports = {
   resolve: {
     extensions: ['.js', '.vue', '.json'],
     alias: {
+      'vue$': 'vue/dist/vue.esm.js',
       '@': resolve('src')
     }
   },

@@ -5,14 +5,11 @@
 </template>
 
 <script>
-import TreemapComponent from './components/TreemapComponent'
 
 export default {
-  name: 'app',
-  components: {
-    TreemapComponent
-  }
+  name: 'app'
 }
+
 </script>
 
 <style>
@@ -22,6 +19,5 @@ export default {
   -moz-osx-font-smoothing: grayscale;
   text-align: center;
   color: #2c3e50;
-  margin-top: 60px;
 }
 </style>
