@@ -12,6 +12,8 @@ export default class Treemap {
     var currentTreemap = document.getElementById(this.elementID)
     this.width = currentTreemap.offsetWidth
     this.height = currentTreemap.offsetHeight
+    this.middle = currentTreemap.getBoundingClientRect().x + this.width / 2.0
+    console.log('MIDDLE', this.middle)
     currentTreemap.innerHTML = ''
 
     this.treemap = d3.layout.treemap()
@@ -29,6 +31,8 @@ export default class Treemap {
   render (data, dimension) {
     // TODO: remove elements, don't create each time.
     this.create()
+
+    var that = this
 
     var root = {
       children: []
@@ -80,7 +84,7 @@ export default class Treemap {
                 .duration(200)
                 .style('opacity', 0.9)
               div.html(`<strong>${d.name}</strong><p>${d.value_fmt}</p><p><strong>${(d.percentage * 100).toFixed(2)}%</strong></p>`)
-                .style('left', (d3.event.pageX) + 'px')
+              .style('left', function (r) { return ((d3.event.pageX > that.middle) ? ((d3.event.pageX - d3.select(this).node().getBoundingClientRect().width) + 'px') : d3.event.pageX + 'px') })
                 .style('top', (d3.event.pageY - 28) + 'px')
             })
             .on('mouseout', function (d) {
