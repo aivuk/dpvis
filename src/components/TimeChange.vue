@@ -29,10 +29,17 @@ export default {
             ticks: {
               beginAtZero: true,
               callback: (value, index, values) => {
-                if (parseInt(value) >= 1000) {
-                  return value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') + '€'
-                } else {
-                  return value + '€'
+                let ivalue = parseInt(value)
+                if (ivalue >= 1000) {
+                  if (ivalue < 1000000) {
+                    return (ivalue / 1000).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') + '€'
+                  } else if (ivalue >= 1000000 && ivalue <= 1000000000) {
+                    return (ivalue / 1000000).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') + 'Mio. €'
+                  } else if (ivalue >= 1000000000) {
+                    return (ivalue / 1000000000).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') + 'Mrd. €'
+                  } else {
+                    return ivalue + '€'
+                  }
                 }
               }
             }
@@ -72,11 +79,13 @@ export default {
     updateLevelLabel: function () {
       var hierarchyName = this.selectedHierarchy['hierarchy']['datapackageHierarchy']
       var level = this.selectedHierarchy['levelsParams'].length
+      console.log(this.selectedHierarchy['levelsParams'])
       var dimensionName = this.model['hierarchies'][hierarchyName]['levels'][level]
       // var levelKey = this.model['dimensions'][dimensionName]['key_ref']
 
       let levelsLength = this.selectedHierarchy['levelsParams'].length
       if (levelsLength > 0) {
+        console.log(dimensionName)
         // this.levelLabel = this.selectedHierarchy['levelsParams'][this.selectedHierarchy['levelsParams'].length - 1]
         let levelLabel = this.model['dimensions'][dimensionName]['label_ref']
         this.levelLabel = levelLabel

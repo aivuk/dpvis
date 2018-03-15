@@ -39,14 +39,14 @@
     </div>
     <div id="treemap" class="treemap">
     </div>
-    <div id="table-toggle" @click="showTable = !showTable">{{ (!showTable)?'Übersicht als Liste':'Zuklappen' }}</div>
+    <div id="table-toggle" @click="showTable = !showTable"><span class="button is-primary">{{ (!showTable)?'Übersicht als Liste':'Zuklappen' }}</span></div>
     <table class="table table-condensed" v-if="showTable">
       <tr>
-        <th>Titel</th>
-        <th class="num">Betrag</th>
+        <th @click="updateSort('titel')">Titel</th>
+        <th @click="updateSort('betrag')"class="num">Betrag</th>
         <th class="num">Anteil</th>
       </tr>
-      <tr v-bind:class="{small: cell['_small']}" v-for="(cell, i) in data['cells']" :key="i">
+      <tr v-bind:class="{small: cell['_small']}" v-for="(cell, i) in dataSorted" :key="i">
           <td>
           <i :style="`color: ${cell['_color']};`" class="fa fa-square"></i>
           <a v-if="cell['_url']" :href="cell['_url']">{{ cell['_label'] }}</a>
@@ -95,15 +95,24 @@ export default {
       ],
       selectedMeasure: 0,
       selectedScale: 0,
-      data: {},
+      data: {'cells': []},
+      sortType: 'betrag',
+      sort: {'titel': 0, 'betrag': 0},
       hierarchyColors: {},
       resource: '',
-      showTable: false,
+      showTable: true,
       datapackageFile: ''
     }
   },
 
   computed: {
+    dataSorted: function () {
+      if (this.sortType === 'betrag') {
+        return this.data['cells'].sort((a, b) => (1 * (1 - this.sort[this.sortType]) - this.sort[this.sortType]) * (a['_value'] - b['_value']))
+      } else {
+        return this.data['cells'].sort((a, b) => (this.sort[this.sortType] === 0) ? a['_label'] > b['_label'] : a['_label'] < b['_label'])
+      }
+    },
     currentLevel: function () { return this.selectedHierarchy['levelsParams'].length },
     ...mapGetters([
       'selectedHierarchy', 'filters'
@@ -121,6 +130,14 @@ export default {
       this.treemap = new Treemap('treemap')
       this.getURLParameters()
       this.getModel().then(response => { this.updateData() })
+    },
+
+    updateSort: function (sortType) {
+      if (sortType === this.sortType) {
+        this.sort[sortType] = (this.sort[sortType] + 1) % 2
+        console.log(this.sort[sortType])
+      }
+      this.sortType = sortType
     },
 
     defaultFilters: function () {
@@ -368,7 +385,7 @@ export default {
           this.data['cells'][i]['_color'] = color(i)
           this.data['cells'][i]['_label'] = this.data['cells'][i][level[0]]
           this.data['cells'][i]['_value_fmt'] = this.formatValue(this.data['cells'][i]['_value'], this.config['value'][this.selectedMeasure]['formatOptions'])
-          if (this.selectedHierarchy['levelsParams'].length < this.model.hierarchies[this.selectedHierarchy['hierarchy']['datapackageHierarchy']]['levels'].length) {
+          if (this.selectedHierarchy['levelsParams'].length <= this.model.hierarchies[this.selectedHierarchy['hierarchy']['datapackageHierarchy']]['levels'].length) {
             this.data['cells'][i]['_url'] = `#${this.selectedHierarchy['hierarchy']['url']}/${levelsParams}${encodeURI(this.data['cells'][i][level[1]])}${filters}`
           }
           this.data['cells'][i]['_percentage'] = this.data['cells'][i]['_value'] / total
