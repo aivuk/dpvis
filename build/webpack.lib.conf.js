@@ -26,8 +26,7 @@ var webpackConfig = merge(baseWebpackConfig, {
   output: {
     path: config.lib.assetsRoot,
     filename: utils.assetsLibPath('[name].min.js'),
-    library: '[name]',
-    libraryTarget: 'umd'
+    library: '[name]'
   },
   plugins: [
     // http://vuejs.github.io/vue-loader/en/workflow/production.html

@@ -9,7 +9,8 @@ function resolve (dir) {
 
 module.exports = {
   entry: {
-    app: './src/dev.js',
+   // app: './src/dev.js',
+    app: './src/treemapConstructor.js'
   },
   output: {
     path: config.build.assetsRoot,

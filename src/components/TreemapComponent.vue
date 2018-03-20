@@ -2,15 +2,11 @@
   <div class="treemap-content">
     <div class="controls">
       <div class="hierarchies">
-      <a class="button" v-if="selectedHierarchy['levelsParams'].length >= 1" @click="levelBack()">
-        <i class="fa fa-level-up"></i>
-        <strong>
-        Ebene hoch
-        </strong>
-      </a>
-      <a class="button" :class='{"is-primary": hierarchyURL() === hierq.url}' :href="`#${hierq.url}`" v-bind:hierq="hierq" v-bind:key="hierq['label']" v-for="hierq in config['hierarchies']">
-        {{hierq['label']}}
-      </a>
+      <b-field>
+        <b-select @change="changeHierarqUrl()" v-model='hierarqUrl'>
+          <option v-bind:hierq="hierq" v-bind:key="hierq['label']" v-for="hierq in config['hierarchies']" :value="hierq['url']">{{hierq['label']}}</option>
+        </b-select>
+      </b-field>
       </div>
       <div class="measures" v-if="config['value'].length > 1">
         <b-field>
@@ -35,6 +31,11 @@
             <option :value="filterValue.value" :key="filterValue.value" v-for="filterValue in filter.values">{{filterValue.label}}</option>
           </b-select>
         </div>
+      </div>
+    </div>
+    <div class="breadcrumb" v-if="breadcrumb.length > 1">
+      <div :key="b['label']" v-for="(b, index) in breadcrumb">
+        <a :href="b['url']">{{ b['label'] }} {{(index < breadcrumb.length - 1)?" >":""}}</a>
       </div>
     </div>
     <div id="treemap" class="treemap">
@@ -83,7 +84,7 @@ import * as accounting from 'accounting'
 export default {
   name: 'treemap',
 
-  props: [ 'apiurl', 'config', 'update' ],
+  props: [ 'apiurl', 'update' ],
 
   data () {
     return {
@@ -95,11 +96,13 @@ export default {
       ],
       selectedMeasure: 0,
       selectedScale: 0,
+      hierarqUrl: '',
       data: {'cells': []},
       sortType: 'betrag',
       sort: {'titel': 0, 'betrag': 0},
       hierarchyColors: {},
       resource: '',
+      breadcrumb: [],
       showTable: true,
       datapackageFile: ''
     }
@@ -115,16 +118,54 @@ export default {
     },
     currentLevel: function () { return this.selectedHierarchy['levelsParams'].length },
     ...mapGetters([
-      'selectedHierarchy', 'filters'
+      'selectedHierarchy', 'filters', 'config'
     ])
   },
 
   mounted () {
-    this.setConfig(this.config)
+    this.setConfig(this.$treemapconfig)
+    if (this.$treemapconfig.hasOwnProperty('colors')) {
+      this.colors = this.$treemapconfig['colors']
+    }
     this.loadDatapackage()
   },
 
   methods: {
+
+    changeHierarqUrl: function () {
+      var URLarguments = parseURL(window.location.toString())
+
+      console.log(URLarguments)
+
+      if (this.hierarqUrl && this.hierarqUrl !== URLarguments[0][0]) {
+        window.location.replace('#' + this.hierarqUrl + '/')
+      }
+    },
+
+    getBreadcrumb: function () {
+      var apiRequestUrl = this.createApiRequestURL(false, true)
+      var that = this
+
+      var hierarqBase = that.selectedHierarchy.hierarchy.url
+      var hierarqBaseLabel = that.selectedHierarchy.hierarchy.label
+      var href = `#${hierarqBase}?${qs.stringify(that.filters)}`
+
+      that.breadcrumb = [{'label': hierarqBaseLabel, 'url': href}]
+
+      axios.get(apiRequestUrl).then(response => {
+        that.selectedHierarchy.levelsParams.forEach(function (e, i) {
+          // let dim = that.selectedHierarchy.levels[i]
+          let hierarchyName = that.selectedHierarchy['hierarchy']['datapackageHierarchy']
+          let dim = that.model['hierarchies'][hierarchyName]['levels'][i]
+          let label = that.model.dimensions[dim]['label_ref']
+          let levelName = response.data.data[0][label]
+          let params = that.selectedHierarchy.levelsParams.slice(0, i + 1)
+          let href = `#${hierarqBase}/${params.join('/')}?${qs.stringify(that.filters)}`
+
+          that.breadcrumb.push({'label': levelName, 'url': href})
+        })
+      })
+    },
 
     loadDatapackage: function () {
       this.treemap = new Treemap('treemap')
@@ -142,7 +183,6 @@ export default {
 
     defaultFilters: function () {
       for (var k in this.config.filters) {
-        console.log(this.config.filters[k].defaultValue)
         this.addFilter({'name': k, 'value': this.config.filters[k].defaultValue})
 //        this.filters[k] = this.config.filters[k].defaultValue
       }
@@ -169,9 +209,11 @@ export default {
       if (URLarguments[0].length === 0) {
         // this.$set(this.selectedHierarchy, 'hierarchy', this.config['hierarchies'][0])
         this.setHierarchy(this.config['hierarchies'][0])
+        this.hierarqUrl = this.config['hierarchies'][0]['url']
         window.location.replace('#' + this.config['hierarchies'][0]['url'])
       } else {
         var hierarchy = this.config['hierarchies'].find(function (h) { return h['url'] === URLarguments[0][0] })
+        this.hierarqUrl = hierarchy['url']
         // this.$set(this.selectedHierarchy, 'hierarchy', hierarchy)
         this.setHierarchy(hierarchy)
       }
@@ -264,6 +306,7 @@ export default {
           this.hasModel = true
           var hierarchyName = this.selectedHierarchy['hierarchy']['datapackageHierarchy']
           this.$set(this.selectedHierarchy, 'levels', this.model['hierarchies'][hierarchyName]['levels'])
+//          this.setLevels()
           this.defaultFilters()
         })
       })
@@ -327,9 +370,10 @@ export default {
       return accounting.formatMoney(value, formatOptions) + postfix
     },
 
-    createApiRequestURL: function (rootLevel = false) {
+    createApiRequestURL: function (rootLevel = false, facts = false) {
       var drilldown
       var hierarchiesFilter = ''
+      var apiRequestUrl = ''
       if (rootLevel) {
         drilldown = this.getDrilldown(0)
       } else {
@@ -337,7 +381,11 @@ export default {
         hierarchiesFilter = this.getHierarchies()
       }
       var filters = this.getFilters()
-      var apiRequestUrl = `${this.apiurl}${this.datapackage}/aggregate/?${filters}${hierarchiesFilter}&drilldown=${drilldown}&order=${this.config.value[this.selectedMeasure]['field']}:desc`
+      if (!facts) {
+        apiRequestUrl = `${this.apiurl}${this.datapackage}/aggregate/?${filters}${hierarchiesFilter}&drilldown=${drilldown}&order=${this.config.value[this.selectedMeasure]['field']}:desc`
+      } else {
+        apiRequestUrl = `${this.apiurl}${this.datapackage}/facts/?${filters}${hierarchiesFilter}&drilldown=${drilldown}&pagesize=1&aggregate=${this.config.value[this.selectedMeasure]['field']}`
+      }
       return apiRequestUrl
     },
 
@@ -394,6 +442,8 @@ export default {
           percentageFmt = percentageFmt.replace('.', ',')
           this.data['cells'][i]['_percentage_fmt'] = percentageFmt
         }
+
+        this.getBreadcrumb()
 
         this.treemap.render(this.data)
       }).catch(e => {

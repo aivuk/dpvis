@@ -6,7 +6,7 @@ Vue.use(Vuex)
 const state = {
   selectedHierarchy: { levelsParams: [], hierarchy: {}, levels: [] },
   filters: {},
-  config: {},
+  config: {'datapackage': '', 'hierarchies': [], 'value': [], 'scale': [], 'filters': {}},
   model: {},
   hierarchyColors: {}
 }
@@ -26,6 +26,32 @@ const mutations = {
   },
   setConfig (state, config) {
     state.config = config
+  },
+  setConfigDatapackage (state, datapackage) {
+    Vue.set(state.config, 'datapackage', datapackage)
+  },
+  addConfigHierarchy (state, hierarchy) {
+    let newHierarchies = [...state.config['hierarchies'], hierarchy]
+    console.log('ADD H')
+    Vue.set(state.config, 'hierarchies', newHierarchies)
+  },
+  removeConfigHierarchy (state, hpos) {
+    let newHierarchies = state.config['hierarchies'].splice(hpos, 1)
+    Vue.set(state.config, 'hierarchies', newHierarchies)
+  },
+  addConfigMeasure (state, measure) {
+    let newMeasures = [...state.config['value'], measure]
+    Vue.set(state.config, 'value', newMeasures)
+  },
+  removeConfigMeasure (state, hpos) {
+    let newMeasures = state.config['value'].splice(hpos, 1)
+    Vue.set(state.config, 'value', newMeasures)
+  },
+  addConfigFilter (state, filter) {
+    Vue.set(state.config['filters'], filter.name, filter.params)
+  },
+  removeConfigFilter (state, filterName) {
+    Vue.delete(state.config['filters'], filterName)
   },
   setModel (state, model) {
     state.model = model

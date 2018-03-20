@@ -50,6 +50,9 @@ export default {
     }
   },
   computed: {
+    hasModel: function () {
+      return Object.keys(this.model).length > 0
+    },
     ...mapGetters(['selectedHierarchy', 'filters', 'config', 'model', 'hierarchyColors'])
   },
   props: {
@@ -77,6 +80,10 @@ export default {
     },
 
     updateLevelLabel: function () {
+      if (!this.hasModel) {
+        return
+      }
+
       var hierarchyName = this.selectedHierarchy['hierarchy']['datapackageHierarchy']
       var level = this.selectedHierarchy['levelsParams'].length
       console.log(this.selectedHierarchy['levelsParams'])
