@@ -17,7 +17,6 @@ export default {
   components: { BarPlot },
   data () {
     return {
-      os_url: 'https://openspending.org/api/3/cubes/a6a16b964a7e784f99adecc47f26318a:berlin-be/aggregate/?drilldown=date_2.Jahr|phase_2.BetragTyp&order=Betrag.sum:desc&pagesize=2000',
       datacollection: {
         labels: [],
         datasets: []
@@ -34,9 +33,9 @@ export default {
                   if (ivalue < 1000000) {
                     return (ivalue / 1000).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') + '€'
                   } else if (ivalue >= 1000000 && ivalue <= 1000000000) {
-                    return (ivalue / 1000000).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') + 'Mio. €'
+                    return (ivalue / 1000000).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ' Mio. €'
                   } else if (ivalue >= 1000000000) {
-                    return (ivalue / 1000000000).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') + 'Mrd. €'
+                    return (ivalue / 1000000000).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ' Mrd. €'
                   } else {
                     return ivalue + '€'
                   }
@@ -52,6 +51,9 @@ export default {
   computed: {
     hasModel: function () {
       return Object.keys(this.model).length > 0
+    },
+    os_url: function () {
+      return `https://openspending.org/api/3/cubes/${this.config.datapackage}/aggregate/?drilldown=${this.config.date}|${this.config.budgetType}&order=betrag.sum:desc&pagesize=2000`
     },
     ...mapGetters(['selectedHierarchy', 'filters', 'config', 'model', 'hierarchyColors'])
   },
@@ -86,13 +88,11 @@ export default {
 
       var hierarchyName = this.selectedHierarchy['hierarchy']['datapackageHierarchy']
       var level = this.selectedHierarchy['levelsParams'].length
-      console.log(this.selectedHierarchy['levelsParams'])
       var dimensionName = this.model['hierarchies'][hierarchyName]['levels'][level]
       // var levelKey = this.model['dimensions'][dimensionName]['key_ref']
 
       let levelsLength = this.selectedHierarchy['levelsParams'].length
       if (levelsLength > 0) {
-        console.log(dimensionName)
         // this.levelLabel = this.selectedHierarchy['levelsParams'][this.selectedHierarchy['levelsParams'].length - 1]
         let levelLabel = this.model['dimensions'][dimensionName]['label_ref']
         this.levelLabel = levelLabel
@@ -104,15 +104,18 @@ export default {
 
     getFilters: function () {
       var filters = ''
-      var filterArgumentQuote
+      var filterValue
       for (var k in this.filters) {
-        if (k !== 'BetragTyp' && k !== 'Jahr') {
+        if (k !== this.config.budgetTypeFilter && k !== this.config.dateFilter) {
           if (this.filters[k] !== '') {
-            filterArgumentQuote = ''
             if (this.config['filters'][k]['type'] === 'string') {
-              filterArgumentQuote = '"'
+              if (this.filters[k].indexOf(';') === -1) {
+                filterValue = `"${this.filters[k]}"`
+              } else {
+                filterValue = this.filters[k]
+              }
             }
-            filters += `${this.config['filters'][k]['name']}:${filterArgumentQuote}${this.filters[k]}${filterArgumentQuote}|`
+            filters += `${this.config['filters'][k]['name']}:${filterValue}|`
           }
         }
       }
@@ -127,14 +130,14 @@ export default {
     updateData: function () {
       let filtersUrl = '&' + this.getFilters()
       let hierarchiesUrl = this.getHierarchies()
-      this.updateLevelLabel()
+      // this.updateLevelLabel()
       axios.get(this.os_url + filtersUrl + hierarchiesUrl).then(resp => {
         let years = {}
         resp.data.cells.forEach(cell => {
-          if (!years.hasOwnProperty(cell['phase_2.BetragTyp'])) {
-            years[cell['phase_2.BetragTyp']] = []
+          if (!years.hasOwnProperty(cell[this.config.budgetType])) {
+            years[cell[this.config.budgetType]] = []
           }
-          years[cell['phase_2.BetragTyp']].push([cell['date_2.Jahr'], cell['Betrag.sum']])
+          years[cell[this.config.budgetType]].push([cell[this.config.date], cell['betrag.sum']])
         })
 
         let yearsLabels = {}
@@ -152,30 +155,28 @@ export default {
         }
 
         if (phasesNum > 1) {
-          let minIst = years['Ist'][0][0]
-          let minPlan = years['Plan'][0][0]
+          let minIst = years[this.config.betragIst][0][0]
+          let minPlan = years[this.config.betragSoll][0][0]
           if (minIst < minPlan) {
             for (let y = minIst; y < minPlan; ++y) {
-              yearsData['Plan'] = [0, ...yearsData['Plan']]
+              yearsData[this.config.betragSoll] = [0, ...yearsData[this.config.betragSoll]]
             }
           } else if (minPlan < minIst) {
             for (let y = minPlan; y < minIst; ++y) {
-              yearsData['Ist'] = [0, ...yearsData['Ist']]
+              yearsData[this.config.betragIst] = [0, ...yearsData[this.config.betragIst]]
             }
           }
-          minYear = Math.min(years['Ist'][0][0], years['Plan'][0][0])
-          maxYear = Math.max(years['Ist'][years['Ist'].length - 1][0], years['Plan'][years['Plan'].length - 1][0])
+          minYear = Math.min(years[this.config.betragIst][0][0], years[this.config.betragSoll][0][0])
+          maxYear = Math.max(years[this.config.betragIst][years[this.config.betragIst].length - 1][0], years[this.config.betragSoll][years[this.config.betragSoll].length - 1][0])
         } else {
           minYear = Math.min(years[phases[0]])
           maxYear = Math.max(years[phases[0]])
         }
 
         let labels = []
-        console.log(minYear, maxYear, years)
         for (var y = minYear; y <= maxYear; ++y) {
           labels.push(y)
         }
-        console.log('LABEL', labels)
 
         let colorBright = d3.rgb(98, 0, 234)
         let colorDark = colorBright.darker().darker()
@@ -188,14 +189,14 @@ export default {
           labels: labels,
           datasets: [
             {
-              label: 'Ist',
-              backgroundColor: colorBright,
-              data: yearsData['Ist']
+              label: 'Soll',
+              backgroundColor: colorDark,
+              data: yearsData[this.config.betragSoll]
             },
             {
-              label: 'Plan',
-              backgroundColor: colorDark,
-              data: yearsData['Plan']
+              label: 'Ist',
+              backgroundColor: colorBright,
+              data: yearsData[this.config.betragIst]
             }
           ]
         }

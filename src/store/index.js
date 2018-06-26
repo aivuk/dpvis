@@ -32,7 +32,6 @@ const mutations = {
   },
   addConfigHierarchy (state, hierarchy) {
     let newHierarchies = [...state.config['hierarchies'], hierarchy]
-    console.log('ADD H')
     Vue.set(state.config, 'hierarchies', newHierarchies)
   },
   removeConfigHierarchy (state, hpos) {
@@ -68,6 +67,7 @@ const actions = {
 const getters = {
   selectedHierarchy: (state) => { return state.selectedHierarchy },
   filters: (state) => { return state.filters },
+  joinFilters: (state) => { return state.filters },
   config: (state) => { return state.config },
   model: (state) => { return state.model },
   hierarchyColors: (state) => { return state.hierarchyColors }

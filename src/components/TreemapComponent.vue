@@ -2,11 +2,14 @@
   <div class="treemap-content">
     <div class="controls">
       <div class="hierarchies">
-      <b-field>
-        <b-select @change="changeHierarqUrl()" v-model='hierarqUrl'>
-          <option v-bind:hierq="hierq" v-bind:key="hierq['label']" v-for="hierq in config['hierarchies']" :value="hierq['url']">{{hierq['label']}}</option>
-        </b-select>
-      </b-field>
+         <div class="filter">
+           Anzeige nach
+           <b-field>
+             <b-select class="dropdown-toggle" @change="changeHierarqUrl()" v-model='hierarqUrl'>
+               <option v-bind:hierq="hierq" v-bind:key="hierq['label']" v-for="hierq in config['hierarchies']" :value="hierq['url']">{{hierq['label']}}</option>
+             </b-select>
+           </b-field>
+         </div>
       </div>
       <div class="measures" v-if="config['value'].length > 1">
         <b-field>
@@ -17,6 +20,7 @@
       </div>
       <div class="scales" v-if="config['scale'].length >= 1">
         <div class="filter">
+          Betrag anzeigen als
           <b-field>
             <b-select @input="updateScale()" v-model="selectedScale">
               <option :value="i" :key="scale.label"  v-for="(scale, i) in config['scale']">{{scale.label}}</option>
@@ -28,44 +32,49 @@
         <div class="filter" :key="filterName" v-for="(filter, filterName) in config['filters']">
           {{ filter.label }}
           <b-select @input="addFilters()" class="dropdown-toggle" v-model="filters[filterName]">
-            <option :value="filterValue.value" :key="filterValue.value" v-for="filterValue in filter.values">{{filterValue.label}}</option>
+            <option :class="{top: filterValue.isTop}" :value="filterValue.value" :key="filterValue.value" v-for="filterValue in filter.values">{{ filterValue.isSub?'&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;':'' }}{{filterValue.label}}</option>
           </b-select>
         </div>
       </div>
     </div>
-    <div class="breadcrumb" v-if="breadcrumb.length > 1">
-      <div :key="b['label']" v-for="(b, index) in breadcrumb">
-        <a :href="b['url']">{{ b['label'] }} {{(index < breadcrumb.length - 1)?" >":""}}</a>
+    <div class="breadcrumb tc" v-if="breadcrumb.length > 1">
+      <div class="blevel" :key="b['label']" v-for="(b, index) in breadcrumb">
+        <a :href="b['url']">{{ b['label'] }} </a>
+        <span>{{(index < breadcrumb.length - 1)?" >":""}}</span>
       </div>
     </div>
     <div id="treemap" class="treemap">
     </div>
     <div id="table-toggle" @click="showTable = !showTable"><span class="button is-primary">{{ (!showTable)?'Übersicht als Liste':'Zuklappen' }}</span></div>
-    <table class="table table-condensed" v-if="showTable">
-      <tr>
-        <th @click="updateSort('titel')">Titel</th>
-        <th @click="updateSort('betrag')"class="num">Betrag</th>
-        <th class="num">Anteil</th>
-      </tr>
-      <tr v-bind:class="{small: cell['_small']}" v-for="(cell, i) in dataSorted" :key="i">
-          <td>
-          <i :style="`color: ${cell['_color']};`" class="fa fa-square"></i>
-          <a v-if="cell['_url']" :href="cell['_url']">{{ cell['_label'] }}</a>
-            <span v-if="!cell['_url']">
-              {{ cell['_label'] }}
-            </span>
-          </td>
-          <td class="num">{{ cell['_value_fmt'] }}</td>
-          <td class="num">{{ cell['_percentage_fmt'] }}</td>
+    <div class="table-div">
+      <table class="table table-condensed" v-if="showTable">
+        <tr>
+          <th @click="updateSort('titel')">Titel <i class="fa" :class="{'inactive-sort': sortType !== 'titel', 'fa-sort-down': sort['titel'] === 1, 'fa-sort-up': sort['titel'] === 0}"></i></th>
+          <th @click="updateSort('betrag')" class="num">{{ valueHeader }} <i class="fa" :class="{'inactive-sort': sortType !== 'betrag', 'fa-sort-down': sort['betrag'] === 1, 'fa-sort-up': sort['betrag'] === 0}"></i></th>
+          <th @click="updateSort('betrag')" class="num">Anteil <i class="fa" :class="{'inactive-sort': sortType !== 'betrag', 'fa-sort-down': sort['betrag'] === 1, 'fa-sort-up': sort['betrag'] === 0}"></i></th>
         </tr>
-      <tr>
-        <th>
-          Total
-        </th>
-        <th v-if="data['summary']" class="num">{{ data['summary']['_valueFmt'] }}</th>
-        <th class="num">100%</th>
-      </tr>
-    </table>
+        <tr v-for="(cell, i) in dataSorted" :key="i">
+            <td>
+            <i :style="`color: ${cell['_color']};`" class="level-color fa fa-square"></i>
+            <div class="level-label">
+              <a v-if="!isLastLevel && cell['_url']" :href="cell['_url']">{{ cell['_label'] }}</a>
+              <span v-if="isLastLevel || !cell['_url']">
+                {{ cell['_label'] }}
+              </span>
+            </div>
+            </td>
+            <td class="num">{{ cell['_value_fmt'] }}</td>
+            <td class="num">{{ cell['_percentage_fmt'] }}</td>
+          </tr>
+        <tr>
+          <th>
+            Total
+          </th>
+          <th v-if="data['summary']" class="num">{{ data['summary']['_valueFmt'] }}</th>
+          <th class="num">100%</th>
+        </tr>
+      </table>
+    </div>
     <div id="download">
       <a :href="resource">download<!-- <i class="fa fa-download" aria-hidden="true"></i> --></a>
     </div>
@@ -90,16 +99,18 @@ export default {
     return {
       model: {},
       hasModel: false,
+      firstHierarq: true,
       colors: [
         '#AA00FF', '#6200EA', '#304FFE', '#2962FF', '#0091EA',
         '#00B8D4', '#00BFA5', '#64DD17', '#00C853'
       ],
       selectedMeasure: 0,
       selectedScale: 0,
+      hasData: false,
       hierarqUrl: '',
       data: {'cells': []},
       sortType: 'betrag',
-      sort: {'titel': 0, 'betrag': 0},
+      sort: {'titel': 0, 'betrag': 1},
       hierarchyColors: {},
       resource: '',
       breadcrumb: [],
@@ -109,6 +120,13 @@ export default {
   },
 
   computed: {
+    valueHeader: function () {
+      var valueHeaderText = 'Betrag'
+      if (this.config.valueHeader) {
+        valueHeaderText = `${this.filters[this.config.valueHeader]}-Betrag`
+      }
+      return valueHeaderText
+    },
     dataSorted: function () {
       if (this.sortType === 'betrag') {
         return this.data['cells'].sort((a, b) => (1 * (1 - this.sort[this.sortType]) - this.sort[this.sortType]) * (a['_value'] - b['_value']))
@@ -116,7 +134,22 @@ export default {
         return this.data['cells'].sort((a, b) => (this.sort[this.sortType] === 0) ? a['_label'] > b['_label'] : a['_label'] < b['_label'])
       }
     },
-    currentLevel: function () { return this.selectedHierarchy['levelsParams'].length },
+    isLastLevel: function () {
+      let hierarchyName = this.selectedHierarchy['hierarchy']['datapackageHierarchy']
+      let dim = this.model['hierarchies'][hierarchyName]['levels'].length
+
+      return this.selectedHierarchy['levelsParams'].length === dim
+    },
+    currentLevel: function () {
+      let hierarchyName = this.selectedHierarchy['hierarchy']['datapackageHierarchy']
+      let dim = this.model['hierarchies'][hierarchyName]['levels'].length
+
+      if (dim > this.selectedHierarchy['levelsParams'].length) {
+        return this.selectedHierarchy['levelsParams'].length
+      } else {
+        return this.selectedHierarchy['levelsParams'].length - 1
+      }
+    },
     ...mapGetters([
       'selectedHierarchy', 'filters', 'config'
     ])
@@ -134,12 +167,26 @@ export default {
 
     changeHierarqUrl: function () {
       var URLarguments = parseURL(window.location.toString())
+      var urlBase = ''
+      var urlFilters = ''
 
-      console.log(URLarguments)
-
-      if (this.hierarqUrl && this.hierarqUrl !== URLarguments[0][0]) {
-        window.location.replace('#' + this.hierarqUrl + '/')
+      if (this.hierarqUrl) {
+        urlBase = '#' + this.hierarqUrl
+        let params = URLarguments[0].splice(1)
+        if (this.hierarqUrl === URLarguments[0] && params.length > 0) {
+          urlBase += '/' + params.join('/')
+        }
       }
+
+      if (Object.keys(URLarguments[1]).length > 0) {
+        urlFilters = `?${qs.stringify(this.filters)}`
+      }
+
+      if (this.firstHierarq) {
+        this.firstHierarq = false
+        return
+      }
+      window.location.hash = urlBase + urlFilters
     },
 
     getBreadcrumb: function () {
@@ -153,6 +200,9 @@ export default {
       that.breadcrumb = [{'label': hierarqBaseLabel, 'url': href}]
 
       axios.get(apiRequestUrl).then(response => {
+        if (response.data.data.length === 0) {
+          return
+        }
         that.selectedHierarchy.levelsParams.forEach(function (e, i) {
           // let dim = that.selectedHierarchy.levels[i]
           let hierarchyName = that.selectedHierarchy['hierarchy']['datapackageHierarchy']
@@ -176,15 +226,15 @@ export default {
     updateSort: function (sortType) {
       if (sortType === this.sortType) {
         this.sort[sortType] = (this.sort[sortType] + 1) % 2
-        console.log(this.sort[sortType])
       }
       this.sortType = sortType
     },
 
     defaultFilters: function () {
       for (var k in this.config.filters) {
-        this.addFilter({'name': k, 'value': this.config.filters[k].defaultValue})
-//        this.filters[k] = this.config.filters[k].defaultValue
+        if (!this.filters.hasOwnProperty(k)) {
+          this.addFilter({'name': k, 'value': this.config.filters[k].defaultValue})
+        }
       }
     },
 
@@ -212,7 +262,8 @@ export default {
         this.hierarqUrl = this.config['hierarchies'][0]['url']
         window.location.replace('#' + this.config['hierarchies'][0]['url'])
       } else {
-        var hierarchy = this.config['hierarchies'].find(function (h) { return h['url'] === URLarguments[0][0] })
+        var hierarchyIdx = this.config['hierarchies'].findIndex(function (h) { return h['url'] === URLarguments[0][0] })
+        var hierarchy = this.config['hierarchies'][hierarchyIdx]
         this.hierarqUrl = hierarchy['url']
         // this.$set(this.selectedHierarchy, 'hierarchy', hierarchy)
         this.setHierarchy(hierarchy)
@@ -257,8 +308,7 @@ export default {
 
     addFilters: function () {
       var URLarguments = parseURL(window.location.toString())
-      console.log(URLarguments)
-      window.location.replace(`#${URLarguments[0].join('/')}?${qs.stringify(this.filters)}`)
+      window.location.hash = `#${URLarguments[0].join('/')}?${qs.stringify(this.filters, { encode: false })}`
     },
 
     getDrilldown: function (levelNumber = this.currentLevel) {
@@ -292,12 +342,20 @@ export default {
       if (this.config.hasOwnProperty('datapackage')) {
         this.datapackage = this.config.datapackage
       }
-
       var datapackagePath = this.datapackage.replace(':', '/')
       var datapackageUrl = `https://s3.amazonaws.com/datastore.openspending.org/${datapackagePath}/`
-      this.datapackageFile = datapackageUrl + 'datapackage.json'
+      if (this.config.hasOwnProperty('datapackageURL')) {
+        this.datapackageFile = this.config.datapackageURL
+      } else {
+        this.datapackageFile = datapackageUrl + 'datapackage.json'
+      }
+
       return axios.get(this.datapackageFile).then(response => {
-        this.resource = datapackageUrl + response.data.resources[0].path
+        if (this.config.hasOwnProperty('datapackageURL')) {
+          this.resource = this.config.datapackageURL.slice(0, this.config.datapackageURL.lastIndexOf('/') + 1) + response.data.resources[0].path
+        } else {
+          this.resource = datapackageUrl + response.data.resources[0].path
+        }
 
         var apiRequestUrl = `${this.apiurl}${this.datapackage}/model/`
         return axios.get(apiRequestUrl).then(response => {
@@ -307,7 +365,8 @@ export default {
           var hierarchyName = this.selectedHierarchy['hierarchy']['datapackageHierarchy']
           this.$set(this.selectedHierarchy, 'levels', this.model['hierarchies'][hierarchyName]['levels'])
 //          this.setLevels()
-          this.defaultFilters()
+          this.addFilters()
+          // this.defaultFilters()
         })
       })
     },
@@ -315,6 +374,9 @@ export default {
     getRoot: function () {
       var apiRequestUrl = this.createApiRequestURL(true)
       return axios.get(apiRequestUrl).then(response => {
+        if (response.data.cells.length === 0) {
+          return
+        }
         var color = d3.scale.ordinal().range(this.colors)
         color = color.domain([response.data.total_cell_count, 0])
         this.getRootColors(color, response.data)
@@ -332,6 +394,7 @@ export default {
     getLevel: function (level) {
       var hierarchyName = this.selectedHierarchy['hierarchy']['datapackageHierarchy']
       var dimensionName = this.model['hierarchies'][hierarchyName]['levels'][level]
+      console.log('NAME', dimensionName)
       var levelLabel = this.model['dimensions'][dimensionName]['label_ref']
       var levelKey = this.model['dimensions'][dimensionName]['key_ref']
       return [levelLabel, levelKey]
@@ -339,14 +402,19 @@ export default {
 
     getFilters: function () {
       var filters = ''
-      var filterArgumentQuote
+      var filterValue
       for (var k in this.filters) {
         if (this.filters[k] !== '') {
-          filterArgumentQuote = ''
           if (this.config['filters'][k]['type'] === 'string') {
-            filterArgumentQuote = '"'
+            if (this.filters[k].indexOf(';') === -1) {
+              filterValue = `"${this.filters[k]}"`
+            } else {
+              filterValue = this.filters[k]
+            }
+          } else {
+            filterValue = this.filters[k]
           }
-          filters += `${this.config['filters'][k]['name']}:${filterArgumentQuote}${this.filters[k]}${filterArgumentQuote}|`
+          filters += `${this.config['filters'][k]['name']}:${filterValue}|`
         }
       }
 
@@ -365,7 +433,7 @@ export default {
 
       if (this.selectedScale >= 1) {
         value = value / Number(this.config['scale'][this.selectedScale]['number'])
-        postfix = `${postfix} / ${this.config['scale'][this.selectedScale]['description']}`
+        postfix = `${postfix} ${this.config['scale'][this.selectedScale]['description']}`
       }
       return accounting.formatMoney(value, formatOptions) + postfix
     },
@@ -393,6 +461,13 @@ export default {
       var apiRequestUrl = this.createApiRequestURL()
       axios.get(apiRequestUrl).then(response => {
         this.data = response.data
+
+        if (this.data.cells.length === 0) {
+          this.hasData = false
+        } else {
+          this.hasData = true
+        }
+
         var level = this.getLevel(this.currentLevel)
         var color = d3.scale.ordinal().range(this.colors)
         color = color.domain([this.data.total_cell_count, 0])
@@ -433,7 +508,7 @@ export default {
           this.data['cells'][i]['_color'] = color(i)
           this.data['cells'][i]['_label'] = this.data['cells'][i][level[0]]
           this.data['cells'][i]['_value_fmt'] = this.formatValue(this.data['cells'][i]['_value'], this.config['value'][this.selectedMeasure]['formatOptions'])
-          if (this.selectedHierarchy['levelsParams'].length <= this.model.hierarchies[this.selectedHierarchy['hierarchy']['datapackageHierarchy']]['levels'].length) {
+          if (this.selectedHierarchy['levelsParams'].length < this.model.hierarchies[this.selectedHierarchy['hierarchy']['datapackageHierarchy']]['levels'].length) {
             this.data['cells'][i]['_url'] = `#${this.selectedHierarchy['hierarchy']['url']}/${levelsParams}${encodeURI(this.data['cells'][i][level[1]])}${filters}`
           }
           this.data['cells'][i]['_percentage'] = this.data['cells'][i]['_value'] / total
@@ -462,15 +537,14 @@ export default {
     },
     'config': {
       'handler': function (newConfig) {
-        this.defaultFilters()
         this.addFilters()
+        this.defaultFilters()
         this.updateData()
       },
       deep: true
     },
     'filters': {
       'handler': function (newFilters) {
-        console.log('FILTERING')
         this.addFilters()
       },
       deep: true
@@ -480,6 +554,11 @@ export default {
 </script>
 
 <style lang="scss">
+
+.fa {
+  font-size: 13px !important;
+  vertical-align: middle !important;
+}
 
 .treemap-content {
   max-width: 1200px;
@@ -503,12 +582,21 @@ export default {
     }
   }
 
+  .scales {
+    float: left;
+  }
+
   .hierarchies {
     float: left;
+    .hierarchy {
+      float: left;
+      padding-left: 10px;
+    }
   }
 
   .measures {
     float: left;
+
   }
 }
 
@@ -544,6 +632,10 @@ a {
   overflow: hidden;
 }
 
+.inactive-sort {
+  opacity: 0.4;
+}
+
 .node {
   display: block;
   border: 0;
@@ -571,7 +663,7 @@ a {
       color: #fff;
       display: block;
       padding-bottom: 0.2em;
-      font-size: 1.5em;
+      font-size: 1.3em;
       text-indent: 2px;
     }
 
@@ -630,57 +722,21 @@ a {
     display: none;
   }
 
+  .level-color {
+    float: left;
+  }
+
+  .level-label {
+    width: 95%;
+    padding-left: 15px;
+    float: left;
+  }
+
   .label a, .label a:hover {
     color: #fff;
     text-decoration: none;
     font-weight: 400;
   }
-}
-
-@font-face {
-  font-family: 'fa-minimal';
-  src:  url('../assets/fonts/fa-minimal.eot?xss5ew');
-  src:  url('../assets/fonts/fa-minimal.eot?xss5ew#iefix') format('embedded-opentype'),
-    url('../assets/fonts/fa-minimal.ttf?xss5ew') format('truetype'),
-    url('../assets/fonts/fa-minimal.woff?xss5ew') format('woff'),
-    url('../assets/fonts/fa-minimal.svg?xss5ew#fa-minimal') format('svg');
-  font-weight: normal;
-  font-style: normal;
-}
-
-.fa {
-  display: inline-block;
-  /* use !important to prevent issues with browser extensions that change fonts */
-  font-family: 'fa-minimal' !important;
-  speak: none;
-  font-style: normal;
-  font-weight: normal;
-  font-variant: normal;
-  text-transform: none;
-  line-height: 1;
-
-  /* Better Font Rendering =========== */
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-.fa-check:before {
-  content: "\f00c";
-}
-.fa-info-circle:before {
-  content: "\f05a";
-}
-.fa-square:before {
-  content: "\f0c8";
-}
-.fa-plus-square:before {
-  content: "\f0fe";
-}
-.fa-minus-square:before {
-  content: "\f146";
-}
-.fa-level-up:before {
-  content: "\f148";
 }
 
 .treemap-tooltip {
@@ -694,6 +750,38 @@ a {
   pointer-events: none;
   z-index: 10;
   display: block;
+}
+
+.table-div {
+  max-height: 350px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.sub {
+  padding-left: 10px;
+}
+
+.top {
+  font-weight: bold;
+}
+
+.breadcrumb.tc {
+   font-size: 0.7em;
+   white-space: normal;
+   .blevel {
+      display: flex;
+      align-items: center;
+   }
+}
+
+.no-data {
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   height: 100%;
+   background-color: #ededed;
+   font-weight: bold;
 }
 
 </style>

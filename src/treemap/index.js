@@ -13,7 +13,6 @@ export default class Treemap {
     this.width = currentTreemap.offsetWidth
     this.height = currentTreemap.offsetHeight
     this.middle = currentTreemap.getBoundingClientRect().x + this.width / 2.0
-    console.log('MIDDLE', this.middle)
     currentTreemap.innerHTML = ''
 
     this.treemap = d3.layout.treemap()
@@ -30,6 +29,9 @@ export default class Treemap {
 
   render (data, dimension) {
     // TODO: remove elements, don't create each time.
+
+    d3.select('.no-data').remove()
+    console.log(data)
     this.create()
 
     var that = this
@@ -37,6 +39,12 @@ export default class Treemap {
     var root = {
       children: []
     }
+
+    if (data.cells.length === 0) {
+      that.div.html('<div class="no-data"><span>Für diesen Filter gibt es keine Daten. Probiere eine andere Kombination.</span></div>')
+      return
+    }
+
     for (var i = 0; i < data.cells.length; i += 1) {
       if (data.cells[i]['_value'] > 0) {
         root.children.push({
@@ -72,28 +80,26 @@ export default class Treemap {
             .style('background', '#fff')
             .classed('big', function (d) { return d.value > data.summary._value / 50 })
             .html(function (d) {
-              if (d.percentage < 0.03) {
+              if (d.percentage < 0.05) {
                 return ''
               }
-              return d.children ? null : '<span class="amount">' + d.value_fmt + '</span>' + d.name
+              return d.children ? null : '<span><span class="amount">' + d.value_fmt + '</span>' + d.name + '</span>'
             })
             .on('mouseover', function (d) {
-              d3.select(this).transition().duration(200)
+              d3.select(this).transition().duration(300)
                 .style({ 'background': d3.rgb(d.color).darker() })
               div.transition()
-                .duration(200)
                 .style('opacity', 0.9)
               div.html(`<strong>${d.name}</strong><p>${d.value_fmt}</p><p><strong>${(d.percentage * 100).toFixed(2)}%</strong></p>`)
               .style('left', function (r) { return ((d3.event.pageX > that.middle) ? ((d3.event.pageX - d3.select(this).node().getBoundingClientRect().width) + 'px') : d3.event.pageX + 'px') })
                 .style('top', (d3.event.pageY - 28) + 'px')
             })
-            .on('mouseout', function (d) {
-              d3.select(this).transition().duration(500)
-                .style({'background': d.color})
-              div.transition()
+             .on('mouseout', function (d) {
+               d3.select(this).transition().duration(1).style({'background': d3.rgb(d.color)})
+               div.transition()
                   .duration(500)
                   .style('opacity', 0)
-            })
+             })
             .transition()
             .duration(500)
             .delay(function (d, i) { return Math.min(i * 30, 1500) })
